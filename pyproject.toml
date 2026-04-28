@@ -1,0 +1,98 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "meaorganoid"
+version = "0.1.0"
+description = "A CSV-first analysis toolkit for Axion microelectrode array (MEA) recordings of brain organoids."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Daniel <your name>", email = "your.email@example.com" },
+]
+keywords = [
+    "microelectrode array",
+    "MEA",
+    "brain organoid",
+    "neuroscience",
+    "Axion",
+    "electrophysiology",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "seaborn>=0.13",
+    "click>=8.1",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pandas-stubs",
+    "types-pyyaml",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
+]
+
+[project.scripts]
+meaorganoid = "meaorganoid.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/<your-user>/mea-organoid-toolkit"
+Issues = "https://github.com/<your-user>/mea-organoid-toolkit/issues"
+Documentation = "https://<your-user>.github.io/mea-organoid-toolkit/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/meaorganoid"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+files = ["src"]
+
+[[tool.mypy.overrides]]
+module = ["scipy.*", "seaborn.*", "matplotlib.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q --strict-markers"
+testpaths = ["tests"]
+markers = [
+    "integration: full-pipeline integration tests against fixtures",
+]
