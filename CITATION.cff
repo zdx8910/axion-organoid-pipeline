@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use meaorganoid, please cite the software. Preprint forthcoming."
+title: "meaorganoid: CSV-first analysis tools for Axion MEA organoid recordings"
+type: software
+authors:
+  - family-names: "Daniel"
+    given-names: "TBD"
+doi: "10.0000/zenodo.placeholder"
+version: "0.1.0"
+date-released: "2026-04-30"
+repository-code: "https://github.com/zdx8910/axion-organoid-pipeline"
+abstract: "A lightweight, CSV-first Python toolkit for Axion microelectrode array recordings of brain organoids. Preprint forthcoming."
+preferred-citation:
+  type: software
+  title: "meaorganoid: CSV-first analysis tools for Axion MEA organoid recordings"
+  authors:
+    - family-names: "Daniel"
+      given-names: "TBD"
+  doi: "10.0000/zenodo.placeholder"
+  notes: "Preprint forthcoming; update this entry when the manuscript is posted."

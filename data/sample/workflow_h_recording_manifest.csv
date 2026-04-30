@@ -1,0 +1,5 @@
+recording_id,condition,active_channel_count,recording_duration_s,mean_firing_rate_hz
+rec_001,control,8,120.0,1.2
+rec_002,control,3,120.0,1.4
+rec_003,treatment,7,45.0,1.7
+rec_004,treatment,9,120.0,8.5
