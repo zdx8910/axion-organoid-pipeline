@@ -15,6 +15,7 @@ from meaorganoid.connectivity import compute_lag_window_adjacency
 from meaorganoid.io import read_axion_spike_csv
 from meaorganoid.metrics import compute_channel_summary, compute_well_summary
 from meaorganoid.plot.condition import plot_group_comparison
+from meaorganoid.plot.raster import plot_raster
 from meaorganoid.plot.spatial import plot_spatial_heatmap
 from meaorganoid.qc import add_qc_flags, compute_qc_flags, render_dashboard
 
@@ -128,6 +129,18 @@ def _read_events(path: Path) -> pd.DataFrame:
 
 def _parse_metrics(metrics: str) -> list[str]:
     return [metric.strip() for metric in metrics.split(",") if metric.strip()]
+
+
+def _parse_time_window(value: str | None) -> tuple[float, float] | None:
+    if value is None:
+        return None
+    parts = [part.strip() for part in value.split(",")]
+    if len(parts) != 2:
+        raise click.BadParameter("expected '<start>,<end>'")
+    start_s, end_s = float(parts[0]), float(parts[1])
+    if end_s <= start_s:
+        raise click.BadParameter("end must be greater than start")
+    return start_s, end_s
 
 
 def _burst_summary(events: pd.DataFrame, bursts: pd.DataFrame) -> pd.DataFrame:
@@ -472,6 +485,61 @@ def compare_conditions(
         metrics=_parse_metrics(metrics),
     )
     stats_table.to_csv(output_dir / f"{prefix}_paired_condition_stats.csv", index=False)
+
+
+@main.command("plot-raster")
+@click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--bursts-input", default=None, type=click.Path(exists=True, path_type=Path))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--prefix", required=True, type=str)
+@click.option("--well", "wells", multiple=True, type=str)
+@click.option("--time-window", default=None, type=str)
+@click.option("--bin-s", default=1.0, show_default=True, type=float)
+@click.option(
+    "fmt",
+    "--format",
+    default="png",
+    show_default=True,
+    type=click.Choice(["png", "pdf", "svg"]),
+)
+@click.option("--dpi", default=150, show_default=True, type=int)
+def plot_raster_command(
+    input_path: Path,
+    bursts_input: Path | None,
+    output_dir: Path,
+    prefix: str,
+    wells: tuple[str, ...],
+    time_window: str | None,
+    bin_s: float,
+    fmt: Literal["png", "pdf", "svg"],
+    dpi: int,
+) -> None:
+    """Render Workflow D NMT-style raster plots."""
+    _configure_cli_logging()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    events = pd.read_csv(input_path)
+    bursts = pd.read_csv(bursts_input) if bursts_input is not None else None
+    selected_wells = list(wells) if wells else sorted(events["well"].astype(str).unique())
+    time_window_s = _parse_time_window(time_window)
+
+    for well in selected_wells:
+        figure = plot_raster(
+            events,
+            well=well,
+            time_window_s=time_window_s,
+            bursts=bursts,
+            firing_rate_bin_s=bin_s,
+        )
+        output_path = output_dir / f"{prefix}_raster_{well}.{fmt}"
+        figure.savefig(output_path, format=fmt, dpi=dpi, bbox_inches="tight")
+        LOGGER.info(
+            "Plotted raster well=%s n_electrodes=%s n_spikes=%s time_window=%s",
+            well,
+            events.loc[events["well"].astype(str) == well, "electrode"].nunique(),
+            len(events.loc[events["well"].astype(str) == well]),
+            time_window_s,
+        )
+        figure.clear()
 
 
 def run_cli(args: list[str] | None = None, **extra: Any) -> Any:

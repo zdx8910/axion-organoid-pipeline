@@ -70,3 +70,23 @@ Options:
   --metrics TEXT          [default: mean_firing_rate_hz,active_channel_count]
   --help                  Show this message and exit.
 ```
+
+## `meaorganoid plot-raster`
+
+```text
+Usage: meaorganoid plot-raster [OPTIONS]
+
+  Render Workflow D NMT-style raster plots.
+
+Options:
+  --input PATH            [required]
+  --bursts-input PATH
+  --output-dir DIRECTORY  [required]
+  --prefix TEXT           [required]
+  --well TEXT
+  --time-window TEXT
+  --bin-s FLOAT           [default: 1.0]
+  --format [png|pdf|svg]  [default: png]
+  --dpi INTEGER           [default: 150]
+  --help                  Show this message and exit.
+```

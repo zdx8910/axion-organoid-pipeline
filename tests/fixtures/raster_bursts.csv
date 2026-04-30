@@ -1,0 +1,3 @@
+well,electrode,burst_index,start_s,end_s,duration_s,n_spikes,mean_isi_s,intra_burst_rate_hz,method
+A1,A1_1,0,0.0,0.2,0.2,2,0.2,10.0,maxinterval
+A1,A1_2,1,0.4,0.6,0.2,2,0.2,10.0,maxinterval
