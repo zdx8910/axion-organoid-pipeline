@@ -1,8 +1,7 @@
-# mea-organoid-toolkit
+# axion-organoid-pipeline
 
 A lightweight, CSV-first analysis toolkit for Axion microelectrode array (MEA) recordings of brain organoids.
 
-[![CI](https://github.com/<your-user>/mea-organoid-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/<your-user>/mea-organoid-toolkit/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
@@ -29,8 +28,8 @@ pip install meaorganoid
 Or from source:
 
 ```bash
-git clone https://github.com/<your-user>/mea-organoid-toolkit
-cd mea-organoid-toolkit
+git clone https://github.com/zdx8910/axion-organoid-pipeline
+cd axion-organoid-pipeline
 pip install -e ".[dev]"
 ```
 
@@ -67,7 +66,7 @@ Every paper figure maps to one of these eight reference workflows:
 
 If you use `meaorganoid` in published work, please cite:
 
-> *(Manuscript in preparation; preprint forthcoming on bioRxiv. A `CITATION.cff` will be added at first release.)*
+> *(Manuscript in preparation; preprint forthcoming on bioRxiv. See `CITATION.cff` for software citation metadata.)*
 
 ## Contributing
 

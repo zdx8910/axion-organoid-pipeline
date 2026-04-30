@@ -33,6 +33,18 @@ nav:
   - Methodology: methodology.md
   - CLI Reference: cli.md
   - API Reference: api.md
+  - Task Plans:
+      - Overview: tasks/README.md
+      - Task 02 - Workflow A: tasks/codex_task_02_workflow_a_ingestion.md
+      - Task 03 - Workflow H: tasks/codex_task_03_workflow_h_qc.md
+      - Task 04 - Workflow B: tasks/codex_task_04_workflow_b_bursts.md
+      - Task 05 - Workflow C: tasks/codex_task_05_workflow_c_baseline.md
+      - Task 06 - Workflow D: tasks/codex_task_06_workflow_d_raster.md
+      - Task 07 - Workflow E: tasks/codex_task_07_workflow_e_spatial.md
+      - Task 08 - Workflow F: tasks/codex_task_08_workflow_f_group.md
+      - Task 09 - Workflow G: tasks/codex_task_09_workflow_g_connectivity.md
+      - Task 10 - Docs Site: tasks/codex_task_10_docs_site.md
+      - Task 11 - CI Release: tasks/codex_task_11_ci_release.md
   - Changelog: changelog.md
   - Citation: citation.md
 plugins:

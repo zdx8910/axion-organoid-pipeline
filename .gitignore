@@ -3,4 +3,6 @@
 .mypy_cache/
 .ruff_cache/
 __pycache__/
+*.DS_Store
+.DS_Store
 *.py[cod]

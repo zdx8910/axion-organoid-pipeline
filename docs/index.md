@@ -1,4 +1,4 @@
-# mea-organoid-toolkit
+# axion-organoid-pipeline
 
 A lightweight, CSV-first analysis toolkit for Axion microelectrode array (MEA) recordings of brain
 organoids.
