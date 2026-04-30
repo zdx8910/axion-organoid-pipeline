@@ -8,6 +8,7 @@ from typing import Any, Literal, cast
 import click
 import pandas as pd
 
+from meaorganoid.bursts import detect_bursts
 from meaorganoid.compare.group import compare_groups
 from meaorganoid.connectivity import compute_lag_window_adjacency
 from meaorganoid.io import read_axion_spike_csv
@@ -17,6 +18,28 @@ from meaorganoid.plot.spatial import plot_spatial_heatmap
 from meaorganoid.qc import add_qc_flags, compute_qc_flags, render_dashboard
 
 LOGGER = logging.getLogger(__name__)
+BURST_COLUMNS = [
+    "well",
+    "electrode",
+    "burst_index",
+    "start_s",
+    "end_s",
+    "duration_s",
+    "n_spikes",
+    "mean_isi_s",
+    "intra_burst_rate_hz",
+    "method",
+]
+BURST_SUMMARY_COLUMNS = [
+    "well",
+    "electrode",
+    "n_bursts",
+    "mean_burst_duration_s",
+    "mean_intra_burst_rate_hz",
+    "mean_ibi_s",
+    "burst_rate_hz",
+    "percent_spikes_in_bursts",
+]
 
 
 def _write_process_outputs(
@@ -93,6 +116,49 @@ def _qc_prefix(path: Path) -> str:
     if stem.endswith(suffix):
         stem = stem[: -len(suffix)]
     return stem
+
+
+def _read_events(path: Path) -> pd.DataFrame:
+    if path.suffix.casefold() == ".parquet":
+        return pd.read_parquet(path)
+    return pd.read_csv(path)
+
+
+def _burst_summary(events: pd.DataFrame, bursts: pd.DataFrame) -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    for keys, group in events.groupby(["well", "electrode"], dropna=False):
+        well, electrode = tuple(keys)
+        group_bursts = bursts.loc[(bursts["well"] == well) & (bursts["electrode"] == electrode)]
+        duration = float(group["time_s"].max() - group["time_s"].min()) if len(group) > 1 else 0.0
+        if group_bursts.empty:
+            mean_ibi = float("nan")
+        else:
+            sorted_bursts = group_bursts.sort_values("start_s")
+            ibis = (
+                sorted_bursts["start_s"].to_numpy(dtype=float)[1:]
+                - sorted_bursts["end_s"].to_numpy(dtype=float)[:-1]
+            )
+            mean_ibi = float(ibis.mean()) if ibis.size else float("nan")
+        spike_count_in_bursts = int(group_bursts["n_spikes"].sum()) if not group_bursts.empty else 0
+        rows.append(
+            {
+                "well": well,
+                "electrode": electrode,
+                "n_bursts": len(group_bursts),
+                "mean_burst_duration_s": float(group_bursts["duration_s"].mean())
+                if not group_bursts.empty
+                else float("nan"),
+                "mean_intra_burst_rate_hz": float(group_bursts["intra_burst_rate_hz"].mean())
+                if not group_bursts.empty
+                else float("nan"),
+                "mean_ibi_s": mean_ibi,
+                "burst_rate_hz": float(len(group_bursts) / duration) if duration > 0 else 0.0,
+                "percent_spikes_in_bursts": float(spike_count_in_bursts / len(group) * 100.0)
+                if len(group) > 0
+                else 0.0,
+            }
+        )
+    return pd.DataFrame(rows, columns=BURST_SUMMARY_COLUMNS)
 
 
 @click.group()
@@ -286,6 +352,65 @@ def qc_report(input_path: Path, output_dir: Path, fmt: Literal["png", "pdf"]) ->
     LOGGER.info("QC pass count: %s", pass_count)
     LOGGER.info("QC fail count: %s", fail_count)
     LOGGER.info("Top failure reason: %s", top_reason)
+
+
+@main.command()
+@click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--prefix", required=True, type=str)
+@click.option(
+    "--method",
+    default="maxinterval",
+    show_default=True,
+    type=click.Choice(["maxinterval", "logisi"]),
+)
+@click.option("--max-isi-start-s", default=0.170, show_default=True, type=float)
+@click.option("--max-isi-end-s", default=0.300, show_default=True, type=float)
+@click.option("--min-ibi-s", default=0.200, show_default=True, type=float)
+@click.option("--min-burst-duration-s", default=0.010, show_default=True, type=float)
+@click.option("--min-spikes-in-burst", default=3, show_default=True, type=int)
+@click.option("--isi-threshold-s", default=None, type=float)
+@click.option("--void-parameter", default=0.7, show_default=True, type=float)
+def bursts(
+    input_path: Path,
+    output_dir: Path,
+    prefix: str,
+    method: Literal["maxinterval", "logisi"],
+    max_isi_start_s: float,
+    max_isi_end_s: float,
+    min_ibi_s: float,
+    min_burst_duration_s: float,
+    min_spikes_in_burst: int,
+    isi_threshold_s: float | None,
+    void_parameter: float,
+) -> None:
+    """Detect Workflow B ISI bursts from canonical events."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    events = _read_events(input_path)
+    detector_kwargs: dict[str, Any] = {"min_spikes_in_burst": min_spikes_in_burst}
+    if method == "maxinterval":
+        detector_kwargs.update(
+            {
+                "max_isi_start_s": max_isi_start_s,
+                "max_isi_end_s": max_isi_end_s,
+                "min_ibi_s": min_ibi_s,
+                "min_burst_duration_s": min_burst_duration_s,
+            }
+        )
+    else:
+        detector_kwargs.update(
+            {
+                "isi_threshold_s": isi_threshold_s,
+                "void_parameter": void_parameter,
+            }
+        )
+
+    burst_table = detect_bursts(events, method=method, **detector_kwargs)
+    burst_table["method"] = method
+    burst_table = burst_table.reindex(columns=BURST_COLUMNS)
+    summary = _burst_summary(events, burst_table)
+    burst_table.to_csv(output_dir / f"{prefix}_bursts.csv", index=False)
+    summary.to_csv(output_dir / f"{prefix}_burst_summary.csv", index=False)
 
 
 def run_cli(args: list[str] | None = None, **extra: Any) -> Any:
