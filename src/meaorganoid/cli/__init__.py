@@ -1,8 +1,9 @@
 """Click command-line interface for meaorganoid."""
 
 import json
+import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, cast
 
 import click
 import pandas as pd
@@ -13,7 +14,9 @@ from meaorganoid.io import read_axion_spike_csv
 from meaorganoid.metrics import compute_channel_summary, compute_well_summary
 from meaorganoid.plot.condition import plot_group_comparison
 from meaorganoid.plot.spatial import plot_spatial_heatmap
-from meaorganoid.qc import add_qc_flags
+from meaorganoid.qc import add_qc_flags, compute_qc_flags, render_dashboard
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _write_process_outputs(
@@ -62,6 +65,34 @@ def _write_process_outputs(
 
 def _prefix_from_path(path: Path) -> str:
     return path.stem.replace(" ", "_")
+
+
+def _configure_cli_logging() -> None:
+    if not LOGGER.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+        LOGGER.addHandler(handler)
+    LOGGER.setLevel(logging.INFO)
+    LOGGER.propagate = False
+
+
+def _qc_summary(manifest: pd.DataFrame) -> pd.DataFrame:
+    failing_reasons = manifest.loc[manifest["qc_reasons"] != "", "qc_reasons"]
+    if failing_reasons.empty:
+        return pd.DataFrame({"qc_reason": [], "count": [], "percentage": []})
+
+    counts = failing_reasons.str.split(",").explode().value_counts().sort_values(ascending=False)
+    summary = counts.rename_axis("qc_reason").reset_index(name="count")
+    summary["percentage"] = summary["count"] / len(manifest) * 100.0
+    return cast(pd.DataFrame, summary)
+
+
+def _qc_prefix(path: Path) -> str:
+    stem = path.stem
+    suffix = "_recording_manifest"
+    if stem.endswith(suffix):
+        stem = stem[: -len(suffix)]
+    return stem
 
 
 @click.group()
@@ -223,6 +254,38 @@ def connectivity(input_path: Path, output: Path, lag_window_ms: float) -> None:
         lag_window_ms / 1000.0,
     )
     adjacency.to_csv(output)
+
+
+@main.command("qc-report")
+@click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option(
+    "fmt",
+    "--format",
+    default="png",
+    show_default=True,
+    type=click.Choice(["png", "pdf"]),
+)
+def qc_report(input_path: Path, output_dir: Path, fmt: Literal["png", "pdf"]) -> None:
+    """Render a Workflow H QC dashboard and summary table."""
+    _configure_cli_logging()
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    manifest = compute_qc_flags(pd.read_csv(input_path))
+    prefix = _qc_prefix(input_path)
+    dashboard_path = output_dir / f"{prefix}_qc_dashboard.{fmt}"
+    summary_path = output_dir / f"{prefix}_qc_summary.csv"
+
+    render_dashboard(manifest, dashboard_path, fmt=fmt)
+    summary = _qc_summary(manifest)
+    summary.to_csv(summary_path, index=False)
+
+    pass_count = int((manifest["qc_status"] == "pass").sum())
+    fail_count = int((manifest["qc_status"] == "fail").sum())
+    top_reason = "none" if summary.empty else str(summary.iloc[0]["qc_reason"])
+    LOGGER.info("QC pass count: %s", pass_count)
+    LOGGER.info("QC fail count: %s", fail_count)
+    LOGGER.info("Top failure reason: %s", top_reason)
 
 
 def run_cli(args: list[str] | None = None, **extra: Any) -> Any:
