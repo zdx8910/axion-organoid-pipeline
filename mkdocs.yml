@@ -35,6 +35,7 @@ nav:
   - API Reference: api.md
   - Task Plans:
       - Overview: tasks/README.md
+      - Task 01 - Bootstrap: tasks/codex_task_01_bootstrap.md
       - Task 02 - Workflow A: tasks/codex_task_02_workflow_a_ingestion.md
       - Task 03 - Workflow H: tasks/codex_task_03_workflow_h_qc.md
       - Task 04 - Workflow B: tasks/codex_task_04_workflow_b_bursts.md
