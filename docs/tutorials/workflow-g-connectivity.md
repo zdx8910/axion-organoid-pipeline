@@ -5,17 +5,22 @@ edges with circular-shift surrogates, and renders the network on the well electr
 
 ## Inputs
 
-This tutorial uses the small sample files in `data/sample/`:
-
 ```text
 data/sample/workflow_g_events.csv
 data/sample/workflow_g_channel_summary.csv
 data/sample/workflow_g_recording_manifest.csv
 ```
 
-The event table must contain `time_s`, `electrode`, and `well`. The channel summary supplies node
-colors and sizes through `mean_firing_rate_hz`. The recording manifest supplies
-`recording_duration_s` per well.
+```python
+import pandas as pd
+from meaorganoid.connectivity import probabilistic_threshold
+
+events = pd.read_csv("data/sample/workflow_g_events.csv")
+adjacency, mask = probabilistic_threshold(
+    events, well="A1", lag_s=0.05, recording_duration_s=2.0, n_iterations=50
+)
+adjacency.shape, mask.dtype
+```
 
 ## Run
 
@@ -31,8 +36,6 @@ meaorganoid connectivity \
 
 ## Outputs
 
-The command writes one figure and one reusable matrix archive per well:
-
 ```text
 outputs/workflow_g/workflow_g_connectivity_A1.png
 outputs/workflow_g/workflow_g_connectivity_A1.npz
@@ -40,6 +43,9 @@ outputs/workflow_g/workflow_g_connectivity_B2.png
 outputs/workflow_g/workflow_g_connectivity_B2.npz
 ```
 
-The NPZ archive contains `adjacency`, `significance_mask`, `electrode_labels`, and `params`. These
-keys are public API so downstream analysis can reuse the thresholded matrix without recomputing
-circular-shift surrogates.
+![Workflow G connectivity](../assets/workflows/workflow-g-connectivity-A1.png)
+
+!!! note "Public API"
+    Stable output filenames: `<prefix>_connectivity_<well>.<fmt>` and
+    `<prefix>_connectivity_<well>.npz`. The NPZ contains `adjacency`,
+    `significance_mask`, `electrode_labels`, and `params`.

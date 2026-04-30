@@ -1,18 +1,40 @@
 # Workflow D: NMT-Style Raster Plot
 
-This tutorial uses `data/sample/workflow_d_events.csv` and renders one raster per well.
+Workflow D renders spike rasters and population firing-rate traces per well. It mirrors the
+inspection workflow researchers often perform in Axion's Neural Metric Tool.
+
+## Inputs
+
+```text
+data/sample/workflow_d_events.csv
+```
+
+```python
+import pandas as pd
+from meaorganoid.plot.raster import plot_raster
+
+events = pd.read_csv("data/sample/workflow_d_events.csv")
+figure = plot_raster(events, well="A1")
+```
+
+## Run
 
 ```bash
 meaorganoid plot-raster \
   --input data/sample/workflow_d_events.csv \
-  --output-dir analysis_out \
+  --output-dir outputs/workflow_d \
   --prefix workflow_d \
   --format png
 ```
 
-The command writes files named `<prefix>_raster_<well>.png`, for example:
+## Outputs
 
-| Output | Description |
-|---|---|
-| `workflow_d_raster_A1.png` | Raster and population firing-rate trace for well `A1`. |
-| `workflow_d_raster_A2.png` | Raster and population firing-rate trace for well `A2`. |
+```text
+outputs/workflow_d/workflow_d_raster_A1.png
+outputs/workflow_d/workflow_d_raster_A2.png
+```
+
+![Workflow D raster](../assets/workflows/workflow-d-raster-A1.png)
+
+!!! note "Public API"
+    Stable output filename pattern: `<prefix>_raster_<well>.<fmt>`.

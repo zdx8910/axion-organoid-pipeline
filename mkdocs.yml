@@ -1,0 +1,55 @@
+site_name: meaorganoid
+site_description: CSV-first Axion MEA analysis toolkit for brain organoids.
+repo_url: https://github.com/zdx8910/axion-organoid-pipeline
+docs_dir: docs
+site_dir: site
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+nav:
+  - Home: index.md
+  - Quickstart: tutorials/quickstart.md
+  - Workflows:
+      - A - Ingestion: tutorials/workflow-a-ingestion.md
+      - B - Burst Detection: tutorials/workflow-b-bursts.md
+      - C - Baseline Normalization: tutorials/workflow-c-baseline.md
+      - D - Raster Plot: tutorials/workflow-d-raster.md
+      - E - Spatial Heatmap: tutorials/workflow-e-spatial.md
+      - F - Group Comparison: tutorials/workflow-f-group.md
+      - G - Connectivity: tutorials/workflow-g-connectivity.md
+      - H - QC Report: tutorials/workflow-h-qc.md
+  - Methodology: methodology.md
+  - CLI Reference: cli.md
+  - API Reference: api.md
+  - Changelog: changelog.md
+  - Citation: citation.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - src
+          options:
+            docstring_style: numpy
+            show_source: false
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true

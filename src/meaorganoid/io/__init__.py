@@ -35,11 +35,6 @@ def _source_name(source: CsvSource) -> str:
 def canonical_columns() -> tuple[str, str, str]:
     """Return the canonical column order for Workflow A spike events.
 
-    Parameters
-    ----------
-    None
-        This helper takes no parameters.
-
     Returns
     -------
     tuple[str, str, str]

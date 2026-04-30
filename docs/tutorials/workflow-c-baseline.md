@@ -1,39 +1,49 @@
 # Workflow C: Baseline Normalization
 
-This tutorial uses the sample well summary in `data/sample/workflow_c_well_summary.csv`.
+Workflow C compares paired wells across baseline and treatment conditions. It writes within-well
+deltas and paired Wilcoxon statistics with Holm-corrected p-values.
 
-## Delta From Baseline
+## Inputs
+
+```text
+data/sample/workflow_c_well_summary.csv
+```
+
+```python
+import pandas as pd
+from meaorganoid.compare import compute_well_delta
+
+summary = pd.read_csv("data/sample/workflow_c_well_summary.csv")
+deltas = compute_well_delta(summary, baseline_label="baseline")
+deltas.filter(regex="well|condition|delta").head()
+```
+
+## Run
 
 ```bash
 meaorganoid compare-baseline \
   --input data/sample/workflow_c_well_summary.csv \
-  --output-dir analysis_out \
+  --output-dir outputs/workflow_c \
   --prefix workflow_c \
   --baseline-label baseline
-```
 
-Example output:
-
-| well | condition | mean_firing_rate_hz__delta | active_channel_count__delta |
-|---|---|---:|---:|
-| A1 | treatment | 0.5 | 1.0 |
-| A2 | treatment | 0.5 | 1.0 |
-| A3 | treatment | 0.5 | 1.0 |
-
-## Paired Condition Stats
-
-```bash
 meaorganoid compare-conditions \
   --input data/sample/workflow_c_well_summary.csv \
-  --output-dir analysis_out \
+  --output-dir outputs/workflow_c \
   --prefix workflow_c \
   --condition-a baseline \
   --condition-b treatment
 ```
 
-Example output:
+## Outputs
 
-| metric | n_pairs | mean_a | mean_b | mean_diff |
-|---|---:|---:|---:|---:|
-| mean_firing_rate_hz | 6 | 1.5 | 2.0 | 0.5 |
-| active_channel_count | 6 | 6.5 | 7.5 | 1.0 |
+```text
+outputs/workflow_c/workflow_c_well_delta_from_baseline.csv
+outputs/workflow_c/workflow_c_paired_condition_stats.csv
+```
+
+![Workflow C deltas](../assets/workflows/workflow-c-deltas.png)
+
+!!! note "Public API"
+    Stable output filenames: `<prefix>_well_delta_from_baseline.csv` and
+    `<prefix>_paired_condition_stats.csv`.

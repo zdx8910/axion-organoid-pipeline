@@ -34,7 +34,15 @@ def add_qc_flags(
 
     Examples
     --------
-    >>> # TODO: doctest in a later task
+    >>> manifest = pd.DataFrame(
+    ...     {
+    ...         "active_channel_count": [8],
+    ...         "recording_duration_s": [120.0],
+    ...         "mean_firing_rate_hz": [1.2],
+    ...     }
+    ... )
+    >>> add_qc_flags(manifest).loc[0, "qc_status"]
+    'pass'
     """
     return compute_qc_flags(
         well_summary,

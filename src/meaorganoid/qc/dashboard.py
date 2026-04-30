@@ -38,7 +38,17 @@ def render_dashboard(
 
     Examples
     --------
-    >>> # TODO: doctest in a later task
+    >>> from pathlib import Path
+    >>> manifest = pd.DataFrame(
+    ...     {
+    ...         "active_channel_count": [8],
+    ...         "recording_duration_s": [120.0],
+    ...         "mean_firing_rate_hz": [1.2],
+    ...     }
+    ... )
+    >>> path = render_dashboard(manifest, Path("/tmp/meaorganoid_qc_example.png"))
+    >>> path.name
+    'meaorganoid_qc_example.png'
     """
     thresholds = QCThresholds()
     frame = manifest.copy()
