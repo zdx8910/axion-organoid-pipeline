@@ -35,7 +35,15 @@ def _write_process_outputs(
     channel_summary.to_csv(output_dir / f"{prefix}_channel_summary.csv", index=False)
     well_summary.to_csv(output_dir / f"{prefix}_well_summary.csv", index=False)
     (output_dir / f"{prefix}_run_metadata.json").write_text(
-        json.dumps({"input": str(input_path), "prefix": prefix}, indent=2) + "\n",
+        json.dumps(
+            {
+                "input": str(input_path),
+                "prefix": prefix,
+                "total_spike_count": len(spikes),
+            },
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
     (output_dir / f"{prefix}_input_metadata.json").write_text(

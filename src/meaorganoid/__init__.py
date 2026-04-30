@@ -3,7 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from meaorganoid.errors import MEAQCError, MEASchemaError, MEAValueError
-from meaorganoid.io import read_axion_spike_csv, resolve_columns
+from meaorganoid.io import canonical_columns, read_axion_spike_csv, resolve_columns
 
 try:
     __version__ = version("meaorganoid")
@@ -15,6 +15,7 @@ __all__ = [
     "MEASchemaError",
     "MEAValueError",
     "__version__",
+    "canonical_columns",
     "read_axion_spike_csv",
     "resolve_columns",
 ]
