@@ -33,3 +33,33 @@ Defaults: `isi_threshold_s = None`, `min_spikes_in_burst = 3`, and `void_paramet
 `<prefix>_bursts.csv` columns: `well`, `electrode`, `burst_index`, `start_s`, `end_s`, `duration_s`, `n_spikes`, `mean_isi_s`, `intra_burst_rate_hz`, `method`.
 
 `<prefix>_burst_summary.csv` columns: `well`, `electrode`, `n_bursts`, `mean_burst_duration_s`, `mean_intra_burst_rate_hz`, `mean_ibi_s`, `burst_rate_hz`, `percent_spikes_in_bursts`.
+
+## STTC functional connectivity
+
+Workflow G computes functional connectivity with the Spike Time Tiling Coefficient (STTC; Cutts
+and Eglen, 2014). For two spike trains A and B, `PA` is the proportion of spikes in A within
+`lag_s` of any spike in B, and `PB` is the matching proportion for spikes in B. `TA` and `TB` are
+the fractions of recording time covered by the union of all `± lag_s` windows around spikes in A
+and B. The coefficient is:
+
+```text
+STTC = 0.5 * ((PA - TB) / (1 - PA * TB) + (PB - TA) / (1 - PB * TA))
+```
+
+The default lag is `lag_s = 0.05` seconds. Electrodes with fewer than `min_spikes = 10` spikes are
+excluded before matrix construction, following the MEA-NAP convention of removing very sparse
+channels from network statistics.
+
+Edges are thresholded with circular-shift null distributions. For each electrode pair, one train is
+shifted by random offsets modulo the recording duration, STTC is recomputed for each surrogate, and
+the real edge is retained only when it exceeds the pair-specific `percentile = 95.0` null cutoff.
+The default number of surrogates is `n_iterations = 200`.
+
+Workflow G output filenames are public API:
+
+```text
+<prefix>_connectivity_<well>.<fmt>
+<prefix>_connectivity_<well>.npz
+```
+
+The NPZ contains `adjacency`, `significance_mask`, `electrode_labels`, and `params`.

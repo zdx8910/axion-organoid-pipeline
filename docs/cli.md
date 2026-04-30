@@ -132,3 +132,27 @@ Options:
   --format [png|pdf|svg]          [default: png]
   --help                          Show this message and exit.
 ```
+
+## `meaorganoid connectivity`
+
+```text
+Usage: meaorganoid connectivity [OPTIONS]
+
+  Render Workflow G STTC functional connectivity networks.
+
+Options:
+  --input PATH            [required]
+  --channel-summary FILE  [required]
+  --manifest FILE         [required]
+  --output-dir DIRECTORY  [required]
+  --prefix TEXT           [required]
+  --well TEXT
+  --lag-s FLOAT           [default: 0.05]
+  --n-iterations INTEGER  [default: 200]
+  --percentile FLOAT      [default: 95.0]
+  --min-spikes INTEGER    [default: 10]
+  --seed INTEGER          [default: 0]
+  --edge-threshold FLOAT  [default: 0.0]
+  --format [png|pdf|svg]  [default: png]
+  --help                  Show this message and exit.
+```

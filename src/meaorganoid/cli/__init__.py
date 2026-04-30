@@ -6,12 +6,15 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 import click
+import numpy as np
 import pandas as pd
 
 from meaorganoid.bursts import detect_bursts
 from meaorganoid.compare import compute_paired_condition_stats, compute_well_delta
 from meaorganoid.compare.group import DEFAULT_GROUP_METRICS, compare_groups
-from meaorganoid.connectivity import compute_lag_window_adjacency
+from meaorganoid.connectivity import probabilistic_threshold
+from meaorganoid.connectivity.adjacency import build_sttc_adjacency
+from meaorganoid.connectivity.plot import plot_connectivity_network
 from meaorganoid.io import read_axion_spike_csv
 from meaorganoid.metrics import compute_channel_summary, compute_well_summary
 from meaorganoid.plot.condition import plot_group_comparison
@@ -142,6 +145,24 @@ def _parse_time_window(value: str | None) -> tuple[float, float] | None:
     if end_s <= start_s:
         raise click.BadParameter("end must be greater than start")
     return start_s, end_s
+
+
+def _duration_for_well(manifest: pd.DataFrame, *, well: str) -> float:
+    if "recording_duration_s" not in manifest.columns:
+        raise click.ClickException("manifest: missing required column 'recording_duration_s'")
+    if "well" in manifest.columns:
+        durations = manifest.loc[
+            manifest["well"].astype(str) == well, "recording_duration_s"
+        ].dropna()
+        if durations.empty:
+            raise click.ClickException(f"manifest: no recording_duration_s for well {well!r}")
+        return float(durations.iloc[0])
+    unique_durations = manifest["recording_duration_s"].dropna().unique()
+    if len(unique_durations) == 1:
+        return float(unique_durations[0])
+    raise click.ClickException(
+        "manifest: include a 'well' column when multiple recording_duration_s values are present"
+    )
 
 
 def _burst_summary(events: pd.DataFrame, bursts: pd.DataFrame) -> pd.DataFrame:
@@ -380,16 +401,102 @@ def plot_group(
 
 @main.command()
 @click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
-@click.option("--output", required=True, type=click.Path(dir_okay=False, path_type=Path))
-@click.option("--lag-window-ms", default=50.0, show_default=True, type=float)
-def connectivity(input_path: Path, output: Path, lag_window_ms: float) -> None:
-    """Compute a lag-windowed connectivity adjacency matrix."""
-    output.parent.mkdir(parents=True, exist_ok=True)
-    adjacency = compute_lag_window_adjacency(
-        read_axion_spike_csv(input_path),
-        lag_window_ms / 1000.0,
-    )
-    adjacency.to_csv(output)
+@click.option(
+    "--channel-summary",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+)
+@click.option(
+    "--manifest", required=True, type=click.Path(exists=True, dir_okay=False, path_type=Path)
+)
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--prefix", required=True, type=str)
+@click.option("--well", "wells", multiple=True, type=str)
+@click.option("--lag-s", default=0.05, show_default=True, type=float)
+@click.option("--n-iterations", default=200, show_default=True, type=int)
+@click.option("--percentile", default=95.0, show_default=True, type=float)
+@click.option("--min-spikes", default=10, show_default=True, type=int)
+@click.option("--seed", default=0, show_default=True, type=int)
+@click.option("--edge-threshold", default=0.0, show_default=True, type=float)
+@click.option(
+    "fmt",
+    "--format",
+    default="png",
+    show_default=True,
+    type=click.Choice(["png", "pdf", "svg"]),
+)
+def connectivity(
+    input_path: Path,
+    channel_summary: Path,
+    manifest: Path,
+    output_dir: Path,
+    prefix: str,
+    wells: tuple[str, ...],
+    lag_s: float,
+    n_iterations: int,
+    percentile: float,
+    min_spikes: int,
+    seed: int,
+    edge_threshold: float,
+    fmt: Literal["png", "pdf", "svg"],
+) -> None:
+    """Render Workflow G STTC functional connectivity networks."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    events = pd.read_csv(input_path)
+    summary = pd.read_csv(channel_summary)
+    manifest_frame = pd.read_csv(manifest)
+    selected_wells = list(wells) if wells else sorted(events["well"].astype(str).unique())
+
+    for well in selected_wells:
+        duration_s = _duration_for_well(manifest_frame, well=well)
+        adjacency, significance_mask = probabilistic_threshold(
+            events,
+            well=well,
+            lag_s=lag_s,
+            recording_duration_s=duration_s,
+            n_iterations=n_iterations,
+            percentile=percentile,
+            seed=seed,
+            min_spikes=min_spikes,
+        )
+        _, electrode_labels = build_sttc_adjacency(
+            events,
+            well=well,
+            lag_s=lag_s,
+            recording_duration_s=duration_s,
+            min_spikes=min_spikes,
+        )
+        figure = plot_connectivity_network(
+            adjacency,
+            electrode_labels,
+            channel_summary=summary,
+            edge_threshold=edge_threshold,
+            title=f"{well} STTC connectivity",
+        )
+        figure.savefig(
+            output_dir / f"{prefix}_connectivity_{well}.{fmt}",
+            format=fmt,
+            dpi=150,
+            bbox_inches="tight",
+        )
+        figure.clear()
+        params = {
+            "well": well,
+            "lag_s": lag_s,
+            "recording_duration_s": duration_s,
+            "n_iterations": n_iterations,
+            "percentile": percentile,
+            "min_spikes": min_spikes,
+            "seed": seed,
+            "edge_threshold": edge_threshold,
+        }
+        np.savez(
+            output_dir / f"{prefix}_connectivity_{well}.npz",
+            adjacency=adjacency,
+            significance_mask=significance_mask,
+            electrode_labels=np.array(electrode_labels, dtype=object),
+            params=np.array(params, dtype=object),
+        )
 
 
 @main.command("qc-report")
