@@ -5,7 +5,8 @@ type: software
 authors:
   - family-names: "Daniel"
     given-names: "TBD"
-doi: "10.0000/zenodo.placeholder"
+# Update this placeholder after the first GitHub Release is archived by Zenodo.
+doi: "10.5281/zenodo.PLACEHOLDER"
 version: "0.1.0"
 date-released: "2026-04-30"
 repository-code: "https://github.com/zdx8910/axion-organoid-pipeline"
@@ -16,5 +17,6 @@ preferred-citation:
   authors:
     - family-names: "Daniel"
       given-names: "TBD"
-  doi: "10.0000/zenodo.placeholder"
+  doi: "10.5281/zenodo.PLACEHOLDER"
   notes: "Preprint forthcoming; update this entry when the manuscript is posted."
+# Add manuscript metadata under `references:` once the bioRxiv or journal link exists.

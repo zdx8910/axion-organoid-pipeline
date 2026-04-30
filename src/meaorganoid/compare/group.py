@@ -193,7 +193,7 @@ def compare_groups(
     >>> frame = pd.DataFrame(
     ...     {"group": ["a"] * 3 + ["b"] * 3, "mean_firing_rate_hz": [1, 1, 1, 2, 2, 2]}
     ... )
-    >>> compare_groups(frame, group_col="group", metrics=["mean_firing_rate_hz"]).loc[0, "n_a"]
+    >>> int(compare_groups(frame, group_col="group", metrics=["mean_firing_rate_hz"]).loc[0, "n_a"])
     3
     """
     metric_list = _validate_inputs(well_summary, group_col, metrics)

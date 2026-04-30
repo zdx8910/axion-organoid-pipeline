@@ -1,0 +1,25 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check --fix
+        entry: ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: ruff format
+        language: system
+        types_or: [python, pyi]
+      - id: mypy
+        name: mypy --strict src/
+        entry: mypy --strict src/
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: mkdocs-build
+        name: mkdocs build --strict
+        entry: mkdocs build --strict
+        language: system
+        pass_filenames: false
+        files: ^(docs/|mkdocs\.yml|README\.md|CHANGELOG\.md|CITATION\.cff)

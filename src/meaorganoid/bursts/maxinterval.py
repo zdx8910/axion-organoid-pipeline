@@ -84,7 +84,7 @@ def detect_bursts_maxinterval(
     Examples
     --------
     >>> import numpy as np
-    >>> detect_bursts_maxinterval(np.array([0.0, 0.05, 0.1])).loc[0, "n_spikes"]
+    >>> int(detect_bursts_maxinterval(np.array([0.0, 0.05, 0.1])).loc[0, "n_spikes"])
     3
     """
     times = validate_spike_times(spike_times_s)

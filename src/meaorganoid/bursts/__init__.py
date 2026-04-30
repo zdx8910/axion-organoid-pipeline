@@ -58,7 +58,7 @@ def detect_bursts(
     >>> events = pd.DataFrame(
     ...     {"well": ["A1"] * 3, "electrode": ["A1_11"] * 3, "time_s": [0.0, 0.05, 0.1]}
     ... )
-    >>> detect_bursts(events).loc[0, "n_spikes"]
+    >>> int(detect_bursts(events).loc[0, "n_spikes"])
     3
     """
     group_columns = list(group_by)

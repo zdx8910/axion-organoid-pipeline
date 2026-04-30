@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install build tools
+        run: pip install -e ".[dev]"
+      - name: Build distributions
+        run: python -m build
+      - name: Extract release notes
+        run: |
+          python - <<'PY' > release-notes.md
+          from pathlib import Path
+          import re
+
+          tag = "${{ github.ref_name }}"
+          version = tag.removeprefix("v")
+          changelog = Path("CHANGELOG.md").read_text(encoding="utf-8")
+          pattern = rf"^## \\[{re.escape(version)}\\].*?(?=^## \\[|\\Z)"
+          match = re.search(pattern, changelog, flags=re.MULTILINE | re.DOTALL)
+          if match is None:
+              raise SystemExit(f"No CHANGELOG.md section found for {version}")
+          print(match.group(0).strip())
+          PY
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: dist/*
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

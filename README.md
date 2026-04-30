@@ -2,8 +2,12 @@
 
 A lightweight, CSV-first analysis toolkit for Axion microelectrode array (MEA) recordings of brain organoids.
 
+[![CI](https://github.com/zdx8910/axion-organoid-pipeline/actions/workflows/ci.yml/badge.svg)](https://github.com/zdx8910/axion-organoid-pipeline/actions/workflows/ci.yml)
+[![Codecov](https://codecov.io/gh/zdx8910/axion-organoid-pipeline/branch/main/graph/badge.svg)](https://codecov.io/gh/zdx8910/axion-organoid-pipeline)
+[![PyPI](https://img.shields.io/pypi/v/meaorganoid.svg)](https://pypi.org/project/meaorganoid/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![DOI](https://img.shields.io/badge/doi-10.5281%2Fzenodo.PLACEHOLDER-blue.svg)](CITATION.cff)
 
 ## What this is
 

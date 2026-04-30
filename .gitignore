@@ -2,7 +2,10 @@
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
 __pycache__/
 *.DS_Store
 .DS_Store
+dist/
+site/
 *.py[cod]

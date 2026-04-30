@@ -33,6 +33,8 @@ nav:
   - Methodology: methodology.md
   - CLI Reference: cli.md
   - API Reference: api.md
+  - Contributing:
+      - Release Process: contributing/release-process.md
   - Task Plans:
       - Overview: tasks/README.md
       - Task 01 - Bootstrap: tasks/codex_task_01_bootstrap.md

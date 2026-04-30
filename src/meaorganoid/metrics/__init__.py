@@ -40,7 +40,7 @@ def compute_channel_summary(
     >>> spikes = pd.DataFrame(
     ...     {"well": ["A1", "A1"], "electrode": ["A1_11", "A1_11"], "time_s": [0.0, 1.0]}
     ... )
-    >>> compute_channel_summary(spikes, recording_duration_s=2.0).loc[0, "spike_count"]
+    >>> int(compute_channel_summary(spikes, recording_duration_s=2.0).loc[0, "spike_count"])
     2
     """
     if "time_s" not in spikes.columns or "electrode" not in spikes.columns:
@@ -101,7 +101,7 @@ def compute_well_summary(channel_summary: pd.DataFrame) -> pd.DataFrame:
     ...         "is_active": [True, True],
     ...     }
     ... )
-    >>> compute_well_summary(channels).loc[0, "total_spike_count"]
+    >>> int(compute_well_summary(channels).loc[0, "total_spike_count"])
     6
     """
     if "well" not in channel_summary.columns:

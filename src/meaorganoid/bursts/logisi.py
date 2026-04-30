@@ -94,7 +94,8 @@ def detect_bursts_logisi(
     Examples
     --------
     >>> import numpy as np
-    >>> detect_bursts_logisi(np.array([0.0, 0.05, 0.1]), isi_threshold_s=0.1).loc[0, "n_spikes"]
+    >>> bursts = detect_bursts_logisi(np.array([0.0, 0.05, 0.1]), isi_threshold_s=0.1)
+    >>> int(bursts.loc[0, "n_spikes"])
     3
     """
     times = validate_spike_times(spike_times_s)
