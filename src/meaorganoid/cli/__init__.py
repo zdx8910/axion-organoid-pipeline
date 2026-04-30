@@ -261,7 +261,15 @@ def run_aggregate(input_dir: Path, output: Path, pattern: str) -> None:
 def plot(input_path: Path, output_dir: Path, prefix: str) -> None:
     """Plot Axion summary CSVs."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    plot_spatial_heatmap(pd.read_csv(input_path), output_dir / f"{prefix}_spatial_heatmap.png")
+    summary = pd.read_csv(input_path)
+    first_well = (
+        str(summary["well"].iloc[0])
+        if "well" in summary.columns and not summary.empty
+        else "unknown"
+    )
+    figure = plot_spatial_heatmap(summary, well=first_well)
+    figure.savefig(output_dir / f"{prefix}_spatial_heatmap.png", dpi=150, bbox_inches="tight")
+    figure.clear()
 
 
 @main.command()
@@ -538,6 +546,58 @@ def plot_raster_command(
             events.loc[events["well"].astype(str) == well, "electrode"].nunique(),
             len(events.loc[events["well"].astype(str) == well]),
             time_window_s,
+        )
+        figure.clear()
+
+
+@main.command("plot-spatial")
+@click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--prefix", required=True, type=str)
+@click.option("--well", "wells", multiple=True, type=str)
+@click.option("--metric", default="mean_firing_rate_hz", show_default=True, type=str)
+@click.option("--grid-rows", default=4, show_default=True, type=int)
+@click.option("--grid-cols", default=4, show_default=True, type=int)
+@click.option("--global-scale/--per-well-scale", default=False, show_default=True)
+@click.option(
+    "fmt",
+    "--format",
+    default="png",
+    show_default=True,
+    type=click.Choice(["png", "pdf", "svg"]),
+)
+def plot_spatial_command(
+    input_path: Path,
+    output_dir: Path,
+    prefix: str,
+    wells: tuple[str, ...],
+    metric: str,
+    grid_rows: int,
+    grid_cols: int,
+    global_scale: bool,
+    fmt: Literal["png", "pdf", "svg"],
+) -> None:
+    """Render Workflow E spatial firing heatmaps."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    summary = pd.read_csv(input_path)
+    selected_wells = list(wells) if wells else sorted(summary["well"].astype(str).unique())
+    vmin = float(summary[metric].min()) if global_scale else None
+    vmax = float(summary[metric].max()) if global_scale else None
+
+    for well in selected_wells:
+        figure = plot_spatial_heatmap(
+            summary,
+            well=well,
+            metric=metric,
+            grid_shape=(grid_rows, grid_cols),
+            vmin=vmin,
+            vmax=vmax,
+        )
+        figure.savefig(
+            output_dir / f"{prefix}_spatial_heatmap_{well}.{fmt}",
+            format=fmt,
+            dpi=150,
+            bbox_inches="tight",
         )
         figure.clear()
 

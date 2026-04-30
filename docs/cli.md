@@ -90,3 +90,24 @@ Options:
   --dpi INTEGER           [default: 150]
   --help                  Show this message and exit.
 ```
+
+## `meaorganoid plot-spatial`
+
+```text
+Usage: meaorganoid plot-spatial [OPTIONS]
+
+  Render Workflow E spatial firing heatmaps.
+
+Options:
+  --input PATH                    [required]
+  --output-dir DIRECTORY          [required]
+  --prefix TEXT                   [required]
+  --well TEXT
+  --metric TEXT                   [default: mean_firing_rate_hz]
+  --grid-rows INTEGER             [default: 4]
+  --grid-cols INTEGER             [default: 4]
+  --global-scale / --per-well-scale
+                                  [default: per-well-scale]
+  --format [png|pdf|svg]          [default: png]
+  --help                          Show this message and exit.
+```
