@@ -1,0 +1,13 @@
+well,condition,mean_firing_rate_hz,active_channel_count
+A1,baseline,1.0,4
+A1,treatment,1.5,5
+A2,baseline,1.2,5
+A2,treatment,1.7,6
+A3,baseline,1.4,6
+A3,treatment,1.9,7
+B1,baseline,1.6,7
+B1,treatment,2.1,8
+B2,baseline,1.8,8
+B2,treatment,2.3,9
+B3,baseline,2.0,9
+B3,treatment,2.5,10

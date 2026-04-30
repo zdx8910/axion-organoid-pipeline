@@ -35,3 +35,38 @@ Options:
   --void-parameter FLOAT         [default: 0.7]
   --help                         Show this message and exit.
 ```
+
+## `meaorganoid compare-baseline`
+
+```text
+Usage: meaorganoid compare-baseline [OPTIONS]
+
+  Compute Workflow C within-well deltas from baseline.
+
+Options:
+  --input PATH            [required]
+  --output-dir DIRECTORY  [required]
+  --prefix TEXT           [required]
+  --baseline-label TEXT   [required]
+  --condition-col TEXT    [default: condition]
+  --metrics TEXT          [default: mean_firing_rate_hz,active_channel_count]
+  --help                  Show this message and exit.
+```
+
+## `meaorganoid compare-conditions`
+
+```text
+Usage: meaorganoid compare-conditions [OPTIONS]
+
+  Compute Workflow C paired condition statistics.
+
+Options:
+  --input PATH            [required]
+  --output-dir DIRECTORY  [required]
+  --prefix TEXT           [required]
+  --condition-a TEXT      [required]
+  --condition-b TEXT      [required]
+  --condition-col TEXT    [default: condition]
+  --metrics TEXT          [default: mean_firing_rate_hz,active_channel_count]
+  --help                  Show this message and exit.
+```

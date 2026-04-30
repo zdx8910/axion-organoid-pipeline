@@ -9,6 +9,7 @@ import click
 import pandas as pd
 
 from meaorganoid.bursts import detect_bursts
+from meaorganoid.compare import compute_paired_condition_stats, compute_well_delta
 from meaorganoid.compare.group import compare_groups
 from meaorganoid.connectivity import compute_lag_window_adjacency
 from meaorganoid.io import read_axion_spike_csv
@@ -40,6 +41,7 @@ BURST_SUMMARY_COLUMNS = [
     "burst_rate_hz",
     "percent_spikes_in_bursts",
 ]
+DEFAULT_COMPARE_METRICS = "mean_firing_rate_hz,active_channel_count"
 
 
 def _write_process_outputs(
@@ -122,6 +124,10 @@ def _read_events(path: Path) -> pd.DataFrame:
     if path.suffix.casefold() == ".parquet":
         return pd.read_parquet(path)
     return pd.read_csv(path)
+
+
+def _parse_metrics(metrics: str) -> list[str]:
+    return [metric.strip() for metric in metrics.split(",") if metric.strip()]
 
 
 def _burst_summary(events: pd.DataFrame, bursts: pd.DataFrame) -> pd.DataFrame:
@@ -411,6 +417,61 @@ def bursts(
     summary = _burst_summary(events, burst_table)
     burst_table.to_csv(output_dir / f"{prefix}_bursts.csv", index=False)
     summary.to_csv(output_dir / f"{prefix}_burst_summary.csv", index=False)
+
+
+@main.command("compare-baseline")
+@click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--prefix", required=True, type=str)
+@click.option("--baseline-label", required=True, type=str)
+@click.option("--condition-col", default="condition", show_default=True, type=str)
+@click.option("--metrics", default=DEFAULT_COMPARE_METRICS, show_default=True, type=str)
+def compare_baseline(
+    input_path: Path,
+    output_dir: Path,
+    prefix: str,
+    baseline_label: str,
+    condition_col: str,
+    metrics: str,
+) -> None:
+    """Compute Workflow C within-well deltas from baseline."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    deltas = compute_well_delta(
+        pd.read_csv(input_path),
+        baseline_label=baseline_label,
+        condition_col=condition_col,
+        metrics=_parse_metrics(metrics),
+    )
+    deltas.to_csv(output_dir / f"{prefix}_well_delta_from_baseline.csv", index=False)
+
+
+@main.command("compare-conditions")
+@click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
+@click.option("--prefix", required=True, type=str)
+@click.option("--condition-a", required=True, type=str)
+@click.option("--condition-b", required=True, type=str)
+@click.option("--condition-col", default="condition", show_default=True, type=str)
+@click.option("--metrics", default=DEFAULT_COMPARE_METRICS, show_default=True, type=str)
+def compare_conditions(
+    input_path: Path,
+    output_dir: Path,
+    prefix: str,
+    condition_a: str,
+    condition_b: str,
+    condition_col: str,
+    metrics: str,
+) -> None:
+    """Compute Workflow C paired condition statistics."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stats_table = compute_paired_condition_stats(
+        pd.read_csv(input_path),
+        condition_a=condition_a,
+        condition_b=condition_b,
+        condition_col=condition_col,
+        metrics=_parse_metrics(metrics),
+    )
+    stats_table.to_csv(output_dir / f"{prefix}_paired_condition_stats.csv", index=False)
 
 
 def run_cli(args: list[str] | None = None, **extra: Any) -> Any:
