@@ -71,6 +71,27 @@ Options:
   --help                  Show this message and exit.
 ```
 
+## `meaorganoid compare-group`
+
+```text
+Usage: meaorganoid compare-group [OPTIONS]
+
+  Compute Workflow F MEA-NAP-style group statistics and plots.
+
+Options:
+  --input PATH                    [required]
+  --output-dir DIRECTORY          [required]
+  --prefix TEXT                   [required]
+  --group-col TEXT                [default: group]
+  --metrics TEXT                  [default: mean_firing_rate_hz,active_channel
+                                  _count,burst_rate_hz]
+  --method [mannwhitneyu|kruskal]
+                                  [default: mannwhitneyu]
+  --correction [holm|bh|none]     [default: holm]
+  --min-n-per-group INTEGER       [default: 3]
+  --help                          Show this message and exit.
+```
+
 ## `meaorganoid plot-raster`
 
 ```text

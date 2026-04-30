@@ -3,8 +3,10 @@
 import pandas as pd
 
 from meaorganoid.compare.baseline import compute_paired_condition_stats, compute_well_delta
+from meaorganoid.compare.group import compare_groups
 
 __all__ = [
+    "compare_groups",
     "compute_delta_from_baseline",
     "compute_paired_condition_stats",
     "compute_well_delta",

@@ -10,7 +10,7 @@ import pandas as pd
 
 from meaorganoid.bursts import detect_bursts
 from meaorganoid.compare import compute_paired_condition_stats, compute_well_delta
-from meaorganoid.compare.group import compare_groups
+from meaorganoid.compare.group import DEFAULT_GROUP_METRICS, compare_groups
 from meaorganoid.connectivity import compute_lag_window_adjacency
 from meaorganoid.io import read_axion_spike_csv
 from meaorganoid.metrics import compute_channel_summary, compute_well_summary
@@ -43,6 +43,7 @@ BURST_SUMMARY_COLUMNS = [
     "percent_spikes_in_bursts",
 ]
 DEFAULT_COMPARE_METRICS = "mean_firing_rate_hz,active_channel_count"
+DEFAULT_GROUP_METRICS_TEXT = ",".join(DEFAULT_GROUP_METRICS)
 
 
 def _write_process_outputs(
@@ -299,17 +300,58 @@ def pipeline(
 @main.command("compare-group")
 @click.option("--input", "input_path", required=True, type=click.Path(exists=True, path_type=Path))
 @click.option("--output-dir", required=True, type=click.Path(file_okay=False, path_type=Path))
-@click.option("--value-column", required=True, type=str)
-@click.option("--group-column", default="group", show_default=True, type=str)
-def compare_group(input_path: Path, output_dir: Path, value_column: str, group_column: str) -> None:
-    """Compare a numeric metric across groups."""
+@click.option("--prefix", required=True, type=str)
+@click.option("--group-col", default="group", show_default=True, type=str)
+@click.option("--metrics", default=DEFAULT_GROUP_METRICS_TEXT, show_default=True, type=str)
+@click.option(
+    "--method",
+    default="mannwhitneyu",
+    show_default=True,
+    type=click.Choice(["mannwhitneyu", "kruskal"]),
+)
+@click.option(
+    "--correction",
+    default="holm",
+    show_default=True,
+    type=click.Choice(["holm", "bh", "none"]),
+)
+@click.option("--min-n-per-group", default=3, show_default=True, type=int)
+def compare_group(
+    input_path: Path,
+    output_dir: Path,
+    prefix: str,
+    group_col: str,
+    metrics: str,
+    method: Literal["mannwhitneyu", "kruskal"],
+    correction: Literal["holm", "bh", "none"],
+    min_n_per_group: int,
+) -> None:
+    """Compute Workflow F MEA-NAP-style group statistics and plots."""
     output_dir.mkdir(parents=True, exist_ok=True)
+    well_summary = pd.read_csv(input_path)
+    metric_list = _parse_metrics(metrics)
     stats_table = compare_groups(
-        pd.read_csv(input_path),
-        value_column=value_column,
-        group_column=group_column,
+        well_summary,
+        group_col=group_col,
+        metrics=metric_list,
+        method=method,
+        correction=correction,
+        min_n_per_group=min_n_per_group,
     )
-    stats_table.to_csv(output_dir / "group_comparison_stats.csv", index=False)
+    stats_table.to_csv(output_dir / f"{prefix}_group_comparison.csv", index=False)
+    for metric in metric_list:
+        figure = plot_group_comparison(
+            well_summary,
+            group_col=group_col,
+            metric=metric,
+            stats=stats_table,
+        )
+        figure.savefig(
+            output_dir / f"{prefix}_group_comparison_{metric}.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+        figure.clear()
 
 
 @main.command("plot-group")
@@ -327,12 +369,13 @@ def plot_group(
 ) -> None:
     """Plot a group comparison figure."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    plot_group_comparison(
+    figure = plot_group_comparison(
         pd.read_csv(input_path),
-        value_column=value_column,
-        group_column=group_column,
-        output=output_dir / f"{prefix}_group_comparison.png",
+        group_col=group_column,
+        metric=value_column,
     )
+    figure.savefig(output_dir / f"{prefix}_group_comparison.png", dpi=150, bbox_inches="tight")
+    figure.clear()
 
 
 @main.command()
