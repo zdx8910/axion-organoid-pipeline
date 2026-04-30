@@ -1,4 +1,4 @@
-"""Workflow A (Fig. 1): Axion spike CSV ingestion and schema normalization."""
+﻿"""Workflow A (Fig. 1): Axion spike CSV ingestion and schema normalization."""
 
 import logging
 import re
@@ -104,14 +104,94 @@ def _infer_well_from_electrodes(electrodes: pd.Series, source: str) -> pd.Series
     return pd.Series("", index=electrodes.index, dtype="string")
 
 
+def _find_header_row(source: CsvSource) -> int:
+    """Return the 0-based row index of the real column-header row."""
+    time_aliases_lower = {_normalise_column_name(a) for a in _ALIASES["time_s"]}
+    if isinstance(source, str | Path):
+        with open(source, encoding="utf-8-sig", errors="replace") as fh:
+            for idx, raw_line in enumerate(fh):
+                if idx > 200:
+                    break
+                cells = [c.strip() for c in raw_line.rstrip("\r\n").split(",")]
+                if any(_normalise_column_name(c) in time_aliases_lower for c in cells):
+                    return idx
+    return 0
+
+
+def _is_axion_mixed_layout(source: CsvSource) -> bool:
+    """Return True when the file uses the Axion NMT mixed-layout format."""
+    try:
+        if isinstance(source, str | Path):
+            with open(source, encoding="utf-8-sig", errors="replace") as fh:
+                lines = [fh.readline() for _ in range(2)]
+        else:
+            pos = source.tell()
+            lines = [source.readline() for _ in range(2)]  # type: ignore[union-attr]
+            source.seek(pos)  # type: ignore[union-attr]
+        if len(lines) < 2:
+            return False
+        row0 = [c.strip() for c in lines[0].rstrip("\r\n").split(",")]
+        row1 = [c.strip() for c in lines[1].rstrip("\r\n").split(",")]
+        time_aliases_lower = {_normalise_column_name(a) for a in _ALIASES["time_s"]}
+        col2_is_time_header = (
+            len(row0) > 2 and _normalise_column_name(row0[2]) in time_aliases_lower
+        )
+        if not col2_is_time_header:
+            return False
+        try:
+            float(row1[2])
+            return True
+        except (ValueError, IndexError):
+            return False
+    except OSError:
+        return False
+
+
+def _parse_axion_mixed_layout(source: CsvSource, source_label: str) -> pd.DataFrame:
+    """Extract spike events from an Axion NMT mixed-layout CSV."""
+    if isinstance(source, str | Path):
+        with open(source, encoding="utf-8-sig", errors="replace") as fh:
+            raw_lines = fh.readlines()
+    else:
+        pos = source.tell()  # type: ignore[union-attr]
+        raw_lines = source.readlines()  # type: ignore[union-attr]
+        source.seek(pos)  # type: ignore[union-attr]
+
+    header_cells = [c.strip() for c in raw_lines[0].rstrip("\r\n").split(",")]
+    col_names = header_cells[2:]
+
+    records = []
+    for line in raw_lines[1:]:
+        cells = [c.strip() for c in line.rstrip("\r\n").split(",")]
+        if len(cells) < len(col_names) + 2:
+            continue
+        spike_cells = cells[2: 2 + len(col_names)]
+        try:
+            float(spike_cells[0])
+        except (ValueError, IndexError):
+            continue
+        records.append(spike_cells)
+
+    if not records:
+        raise MEASchemaError(f"{source_label}: no parseable spike rows found in mixed-layout CSV")
+
+    df = pd.DataFrame(records, columns=col_names)
+    resolved = resolve_columns(col_names, source=source_label)
+    rename_map = {original: canonical for canonical, original in resolved.items()}
+    df = df.rename(columns=rename_map)
+    df["time_s"] = pd.to_numeric(df["time_s"], errors="coerce").astype("float64")
+    df = cast(pd.DataFrame, df.dropna(subset=["time_s"]).copy())
+    LOGGER.info("%s: extracted %d spike events from mixed-layout CSV", source_label, len(df))
+    return df
+
+
 def read_axion_spike_csv(source: CsvSource) -> pd.DataFrame:
     """Read an Axion spike CSV and return tidy canonical spike events.
 
     Parameters
     ----------
     source
-        Path or text buffer containing an Axion spike CSV export. Supported aliases are documented
-        in ``AGENTS.md`` and normalized to ``time_s``, ``electrode``, and optionally ``well``.
+        Path or text buffer containing an Axion spike CSV export.
 
     Returns
     -------
@@ -126,13 +206,34 @@ def read_axion_spike_csv(source: CsvSource) -> pd.DataFrame:
     [{'time_s': 0.0, 'electrode': 'E1', 'well': ''}]
     """
     source_label = _source_name(source)
-    data = pd.read_csv(source)
-    data.columns = [str(column).strip() for column in data.columns]
-    resolved = resolve_columns(list(data.columns), source=source_label)
-    rename_map = {original: canonical for canonical, original in resolved.items()}
-    tidy = data.rename(columns=rename_map).copy()
 
-    tidy["time_s"] = pd.to_numeric(tidy["time_s"], errors="raise").astype("float64")
+    if _is_axion_mixed_layout(source):
+        LOGGER.info(
+            "%s: detected Axion mixed-layout CSV; extracting spike columns directly",
+            source_label,
+        )
+        tidy = _parse_axion_mixed_layout(source, source_label)
+    else:
+        header_row = _find_header_row(source)
+        if header_row > 0:
+            LOGGER.info(
+                "%s: skipping %d Axion metadata row(s) before column header",
+                source_label,
+                header_row,
+            )
+        data = pd.read_csv(
+            source,
+            skiprows=header_row,
+            on_bad_lines="skip",
+            encoding_errors="replace",
+        )
+        data.columns = [str(column).strip() for column in data.columns]
+        resolved = resolve_columns(list(data.columns), source=source_label)
+        rename_map = {original: canonical for canonical, original in resolved.items()}
+        tidy = data.rename(columns=rename_map).copy()
+        tidy["time_s"] = pd.to_numeric(tidy["time_s"], errors="coerce").astype("float64")
+        tidy = cast(pd.DataFrame, tidy.dropna(subset=["time_s"]).copy())
+
     tidy["electrode"] = tidy["electrode"].fillna("").astype("string")
     if "well" in tidy.columns:
         tidy["well"] = tidy["well"].fillna("").astype("string")
